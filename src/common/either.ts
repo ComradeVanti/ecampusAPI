@@ -1,5 +1,3 @@
-import { asSingletonArray } from './arrayUtil';
-
 export class Either<TOk, TError> {
   private constructor(
     private readonly valueOrError: TOk | TError,
@@ -25,7 +23,7 @@ export class Either<TOk, TError> {
     eithers: Either<TOk, TError>[]
   ): Either<TOk[], TError> =>
     eithers
-      .map((either) => either.map(asSingletonArray))
+      .map((either) => either.map(Array.of))
       .reduce((acc, either) =>
         acc.bind((accValue) => either.map((value) => accValue.concat(value)))
       );
@@ -74,5 +72,4 @@ export class Either<TOk, TError> {
     mapValue: (value: TOk) => TMapped,
     mapError: (error: TError) => TMapped
   ): TMapped => (this.isOk ? mapValue(this.value) : mapError(this.error));
-
 }
