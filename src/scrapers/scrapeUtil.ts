@@ -1,4 +1,4 @@
-import { Parse } from '../scraper';
+import { Parse } from './scraper';
 
 export const readAfter = (s: string, search: string): string => {
   const index = s.indexOf(search);

@@ -1,7 +1,7 @@
-import { Operation } from '../monads/operation';
+import { Operation } from './operation';
 import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
 import setCookie from 'set-cookie-parser';
-import { Maybe } from '../monads/maybe';
+import { Maybe } from './maybe';
 
 export const enum WebErrorType {
   GENERIC = 'GENERIC',

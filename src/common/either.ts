@@ -1,4 +1,4 @@
-import { asSingletonArray } from '../util/arrayUtil';
+import { asSingletonArray } from './arrayUtil';
 
 export class Either<TOk, TError> {
   private constructor(

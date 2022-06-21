@@ -1,7 +1,7 @@
-import { Course } from '../domain';
-import { Find, makeScrapeError } from '../scraper';
+import { Course } from '../common/domain';
+import { Find, makeScrapeError } from './scraper';
 import { readAfter, tryParseInt } from './scrapeUtil';
-import { Either } from '../monads/either';
+import { Either } from '../common/either';
 
 export type CourseScrapeData = Course;
 

@@ -1,8 +1,8 @@
-import { Season, Semester } from '../domain';
+import { Season, Semester } from '../common/domain';
 import { CourseScrapeData, scrapeCourse } from './course';
-import { Find, makeScrapeError, Parse } from '../scraper';
+import { Find, makeScrapeError, Parse } from './scraper';
 import { tryParseInt } from './scrapeUtil';
-import { Either } from '../monads/either';
+import { Either } from '../common/either';
 
 export type SemesterScrapeData = {
   semester: Semester;
