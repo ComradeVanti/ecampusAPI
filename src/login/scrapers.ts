@@ -1,4 +1,4 @@
-import { Find } from './scraper';
+import { Find } from '../scrapers/scraper';
 import { Either } from '../common/either';
 
 export const scrapeLoginToken = Find.rootContext
