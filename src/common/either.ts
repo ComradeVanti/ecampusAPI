@@ -56,18 +56,6 @@ export class Either<TOk, TError> {
   ): Either<TOk, TMapped> =>
     this.isOk ? Either.ok(this.value) : Either.error(mapF(this.error));
 
-  mapAsync = <TMapped>(
-    bindF: (value: TOk) => Promise<TMapped>
-  ): Promise<Either<TMapped, TError>> =>
-    this.isOk
-      ? bindF(this.value).then(Either.ok)
-      : Promise.resolve(Either.error(this.error));
-
-  bindAsync = <TMapped>(
-    bindF: (value: TOk) => Promise<Either<TMapped, TError>>
-  ): Promise<Either<TMapped, TError>> =>
-    this.isOk ? bindF(this.value) : Promise.resolve(Either.error(this.error));
-
   match = <TMapped>(
     mapValue: (value: TOk) => TMapped,
     mapError: (error: TError) => TMapped
