@@ -1,5 +1,5 @@
 import { Operation } from './operation';
-import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
+import axios, { AxiosResponse, AxiosRequestConfig} from 'axios';
 import setCookie from 'set-cookie-parser';
 import { Maybe } from './maybe';
 import { Html } from './domain';
