@@ -27,6 +27,20 @@ export class Operation<TOk, TError> {
     return this.fromEither(Either.error(error));
   }
 
+  static combineTwo<TOk1, TOk2, TError>(
+    op1: Operation<TOk1, TError>,
+    op2: Operation<TOk2, TError>
+  ): Operation<[TOk1, TOk2], TError> {
+    return new Operation(
+      op1.promise.then(async (either1) => {
+        const either2 = await op2.promise;
+        return either1.bind((value1) =>
+          either2.map((value2) => [value1, value2])
+        );
+      })
+    );
+  }
+
   private constructor(private readonly promise: Promise<Either<TOk, TError>>) {}
 
   map = <TMapped>(mapF: (value: TOk) => TMapped) =>
@@ -47,4 +61,7 @@ export class Operation<TOk, TError> {
 
   mapError = <TMapped>(mapF: (error: TError) => TMapped) =>
     new Operation(this.promise.then((either) => either.mapError(mapF)));
+
+  iter = (onOk: (value: TOk) => void, onError: (error: TError) => void) =>
+    this.promise.then((either) => either.match(onOk, onError));
 }
