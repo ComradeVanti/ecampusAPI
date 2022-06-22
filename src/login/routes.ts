@@ -86,19 +86,16 @@ router.get('/', async (req, res) => {
   const { username, password }: LoginReqDto = req.body;
 
   const pageResponse = await tryGetLoginPage().run();
-  const rootElement = pageResponse
+  const formData = pageResponse
     .map((it) => it.data)
     .map(makeDoc)
-    .map(getRootElement);
-  const token = await Operation.fromResult(rootElement)
+    .map(getRootElement)
     .bind(tryGetLoginToken)
-    .run();
-  const formData = token.map((token) =>
-    makeFormData(username, password, token)
-  );
+    .map((token) => makeFormData(username, password, token));
   const preSession = pageResponse.bind((res) =>
     tryGetSession(res, noSessionError)
   );
+
   const loginResponse = await Operation.fromResult(
     Either.merge(formData, preSession)
   )
@@ -109,7 +106,6 @@ router.get('/', async (req, res) => {
   const redirectUrl = loginResponse.bind((res) =>
     tryGetRedirectUrl(res).toEither(noRedirectError)
   );
-
   const session = loginResponse.bind((res) =>
     tryGetSession(res, invalidCredentialsError)
   );
@@ -120,13 +116,12 @@ router.get('/', async (req, res) => {
     .bindAsync(([session, url]) =>
       get<Html>(url, [withSession(session), noRedirect(), keepAlive()])
         .mapError(makeNetworkError)
-        .bind((res) =>
+        .bind<LoginSuccessResDto>((res) =>
           res.status === 303
-            ? Either.ok(session)
+            ? Either.ok({ session })
             : Either.error(noRedirectError)
         )
     )
-    .map<LoginSuccessResDto>((session) => ({ session }))
     .run();
 
   successDto.iter(
