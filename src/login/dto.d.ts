@@ -1,8 +1,8 @@
-export type LoginReqDto = {
+export type ReqDto = {
   username: string;
   password: string;
 };
 
-export type LoginSuccessResDto = {
+export type SuccessResDto = {
   session: string
 }

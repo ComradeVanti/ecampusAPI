@@ -1,5 +1,5 @@
 import express from 'express';
-import { LoginReqDto, LoginSuccessResDto } from './dto';
+import { ReqDto, SuccessResDto } from './dto';
 import FormData from 'form-data';
 import {
   withSession,
@@ -83,7 +83,7 @@ const postCredentials = (formData: FormData, session: string) =>
   ]).mapError(makeNetworkError);
 
 router.get('/', async (req, res) => {
-  const { username, password }: LoginReqDto = req.body;
+  const { username, password }: ReqDto = req.body;
 
   const pageResponse = await tryGetLoginPage().run();
   const formData = pageResponse
@@ -116,7 +116,7 @@ router.get('/', async (req, res) => {
     .bindAsync(([session, url]) =>
       get<Html>(url, [withSession(session), noRedirect(), keepAlive()])
         .mapError(makeNetworkError)
-        .bind<LoginSuccessResDto>((res) =>
+        .bind<SuccessResDto>((res) =>
           res.status === 303
             ? Either.ok({ session })
             : Either.error(noRedirectError)
