@@ -114,5 +114,5 @@ export const getDocument = <TReq = any>(
 export const tryGetCookie = (response: AxiosResponse, cookie: string) => {
   const rawCookies = response.headers[cookie] ?? [];
   const cookies = setCookie.parse(rawCookies);
-  return Maybe.fromNullable(cookies[0].value ?? null);
+  return Maybe.fromNullable(cookies[0]?.value ?? null);
 };
