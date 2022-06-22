@@ -1,5 +1,5 @@
 import { Operation } from './operation';
-import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
+import axios, { AxiosResponse, AxiosRequestConfig, AxiosError } from 'axios';
 import setCookie from 'set-cookie-parser';
 import { Maybe } from './maybe';
 import { Html } from './domain';
@@ -12,9 +12,28 @@ export type ConfigMod<T> = (
 
 export const enum WebErrorType {
   GENERIC = 'GENERIC',
+  MAX_REDIRECT = 'Maximum redirects',
 }
 
-export type WebError = { type: WebErrorType.GENERIC; reason: any };
+export type WebError =
+  | { type: WebErrorType.GENERIC; reason: string }
+  | { type: WebErrorType.MAX_REDIRECT };
+
+const makeGenericError = (reason: string): WebError => ({
+  type: WebErrorType.GENERIC,
+  reason,
+});
+
+const maxRedirectError: WebError = { type: WebErrorType.MAX_REDIRECT };
+
+const handleError = (error: AxiosError): WebError => {
+  switch (error.code) {
+    case AxiosError.ERR_FR_TOO_MANY_REDIRECTS:
+      return maxRedirectError;
+    default:
+      return makeGenericError(error.message);
+  }
+};
 
 export const makeDoc = (html: Html): Document =>
   new JSDOM(html).window.document;
@@ -83,7 +102,7 @@ export const post = <TRes, TReq>(
 ): Operation<AxiosResponse<TRes, TReq>, WebError> =>
   Operation.fromPromise<AxiosResponse<TRes, TReq>, WebError>(
     axios.post(url, data, makeConfigWith(mods)),
-    (reason) => ({ type: WebErrorType.GENERIC, reason })
+    handleError
   );
 
 export const postForm = <TRes>(
@@ -98,7 +117,7 @@ export const get = <TRes, TReq = any>(
 ): Operation<AxiosResponse<TRes, TReq>, WebError> =>
   Operation.fromPromise<AxiosResponse<TRes, TReq>, WebError>(
     axios.get(url, makeConfigWith(mods)),
-    (reason) => ({ type: WebErrorType.GENERIC, reason })
+    handleError
   );
 
 export const getHtml = <TReq = any>(
@@ -110,6 +129,14 @@ export const getDocument = <TReq = any>(
   url: string,
   mods: ConfigMod<TReq>[] = []
 ) => getHtml<TReq>(url, mods).map(makeDoc);
+
+export const getRootElement = <TReq = any>(
+  url: string,
+  mods: ConfigMod<TReq>[] = []
+) =>
+  getDocument<TReq>(url, mods).map(
+    (doc) => doc.documentElement as HTMLHtmlElement
+  );
 
 export const tryGetCookie = (response: AxiosResponse, cookie: string) => {
   const rawCookies = response.headers[cookie] ?? [];
