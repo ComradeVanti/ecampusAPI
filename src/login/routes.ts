@@ -11,7 +11,6 @@ import {
   WebError,
   noRedirect,
   keepAlive,
-  withQueryParams,
 } from '../common/web';
 import { scrapeLoginToken } from './scrapers';
 import { ScrapeError } from '../scrapers/scraper';
