@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc",
-    "watch": "nodemon --watch src -e ts --exec ts-node src/index.ts",
+    "watch": "nodemon --watch src -e ts --exec \"node --inspect-brk=0.0.0.0:3000 --require ts-node/register src/index.ts\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
