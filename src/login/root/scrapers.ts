@@ -1,5 +1,5 @@
-import { Find } from '../scrapers/scraper';
-import { Either } from '../common/either';
+import { Find } from '../../scrapers/scraper';
+import { Either } from '../../common/either';
 
 export const scrapeLoginToken = Find.rootContext
   .next(Find.body)
