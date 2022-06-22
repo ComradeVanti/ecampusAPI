@@ -1,5 +1,5 @@
 import { Operation } from './operation';
-import axios, { AxiosResponse, AxiosRequestConfig} from 'axios';
+import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
 import setCookie from 'set-cookie-parser';
 import { Maybe } from './maybe';
 import { Html } from './domain';
@@ -19,30 +19,58 @@ export type WebError = { type: WebErrorType.GENERIC; reason: any };
 export const makeDoc = (html: Html): Document =>
   new JSDOM(html).window.document;
 
+export const extendConfig =
+  <TReq>(other: AxiosRequestConfig<TReq>): ConfigMod<TReq> =>
+  (config) => ({
+    ...config,
+    ...other,
+  });
+
+export const addHeader =
+  <TReq>(name: string, value: string): ConfigMod<TReq> =>
+  (config) => {
+    const copy = { ...config };
+    copy.headers = copy.headers ?? {};
+    copy.headers[name] = value;
+    return copy;
+  };
+
+export const mergeMods =
+  <TReq>(mods: ConfigMod<TReq>[]): ConfigMod<TReq> =>
+  (config) => {
+    let acc = config;
+    mods.forEach((mod) => (acc = mod(acc)));
+    return acc;
+  };
+
 const makeConfigWith = <TReq>(
   mods: ConfigMod<TReq>[]
 ): AxiosRequestConfig<TReq> => {
   let config: AxiosRequestConfig<TReq> = {};
-  mods.forEach((mod) => (config = mod(config)));
-  return config;
+  let merged = mergeMods(mods);
+  return merged(config);
 };
 
-export const withSession =
-  <TReq>(session: string): ConfigMod<TReq> =>
-  (config) => ({
-    ...config,
-    headers: {
-      Cookie: `MoodleSession=${session}`,
-    },
-    withCredentials: true,
-  });
+export const withSession = <TReq>(session: string) =>
+  mergeMods([
+    extendConfig<TReq>({
+      withCredentials: true,
+    }),
+    addHeader('Cookie', `MoodleSession=${session}`),
+  ]);
 
-export const noRedirect =
-  <TReq>(): ConfigMod<TReq> =>
-  (config) => ({
-    ...config,
+export const noRedirect = <TReq>() =>
+  extendConfig<TReq>({
     maxRedirects: 0,
     validateStatus: (code) => code >= 200 && code <= 303,
+  });
+
+export const keepAlive = <TReq>() =>
+  addHeader<TReq>('Connection', 'keep-alive');
+
+export const withQueryParams = <TReq>(params: Record<string, any>) =>
+  extendConfig<TReq>({
+    params,
   });
 
 export const tryGetRedirectUrl = (response: AxiosResponse): Maybe<string> =>

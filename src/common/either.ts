@@ -19,6 +19,12 @@ export class Either<TOk, TError> {
   static error = <TError>(error: TError) =>
     new Either<any, TError>(error, false);
 
+  static merge = <TOk1, TOk2, TError>(
+    either1: Either<TOk1, TError>,
+    either2: Either<TOk2, TError>
+  ): Either<[TOk1, TOk2], TError> =>
+    either1.bind((value1) => either2.map((value2) => [value1, value2]));
+
   static collect = <TOk, TError>(
     eithers: Either<TOk, TError>[]
   ): Either<TOk[], TError> =>
@@ -60,4 +66,9 @@ export class Either<TOk, TError> {
     mapValue: (value: TOk) => TMapped,
     mapError: (error: TError) => TMapped
   ): TMapped => (this.isOk ? mapValue(this.value) : mapError(this.error));
+
+  iter = (
+    iterValue: (value: TOk) => void,
+    iterError: (error: TError) => void
+  ) => this.match(iterValue, iterError);
 }

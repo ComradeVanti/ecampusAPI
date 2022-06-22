@@ -1,5 +1,5 @@
 import express from 'express';
-import { LoginReqDto } from './dto';
+import { LoginReqDto, LoginSuccessResDto } from './dto';
 import FormData from 'form-data';
 import {
   withSession,
@@ -10,11 +10,15 @@ import {
   tryGetCookie,
   WebError,
   noRedirect,
+  keepAlive,
+  withQueryParams,
 } from '../common/web';
 import { scrapeLoginToken } from './scrapers';
 import { ScrapeError } from '../scrapers/scraper';
 import { Html } from '../common/domain';
 import { Operation } from '../common/operation';
+import { Either } from '../common/either';
+import { AxiosResponse } from 'axios';
 
 export const enum LoginErrorType {
   NETWORK = 'Network',
@@ -50,10 +54,13 @@ const getRootElement = (doc: Document) =>
   doc.documentElement as HTMLHtmlElement;
 
 const tryGetLoginPage = () =>
-  get<Html>(LoginPageUrl).mapError(makeNetworkError);
+  get<Html>(LoginPageUrl, [keepAlive()]).mapError(makeNetworkError);
 
 const tryGetLoginToken = (pageRoot: HTMLHtmlElement) =>
   scrapeLoginToken(pageRoot).mapError(makeScrapeError);
+
+const getSession = (res: AxiosResponse) =>
+  tryGetCookie(res, 'set-cookie').toEither(noSessionError);
 
 const makeFormData = (username: string, password: string, token: string) => {
   const formData = new FormData();
@@ -65,43 +72,62 @@ const makeFormData = (username: string, password: string, token: string) => {
 
 const postCredentials = (formData: FormData, session: string) =>
   postForm(LoginPageUrl, formData, [
-    withSession(session),
     noRedirect(),
+    keepAlive(),
+    withSession(session),
   ]).mapError(makeNetworkError);
 
 router.get('/', async (req, res) => {
   const { username, password }: LoginReqDto = req.body;
 
-  const pageResponse = tryGetLoginPage();
-  const token = pageResponse
+  const pageResponse = await tryGetLoginPage().run();
+  const rootElement = pageResponse
     .map((it) => it.data)
     .map(makeDoc)
-    .map(getRootElement)
-    .bind(tryGetLoginToken);
+    .map(getRootElement);
+  const token = await Operation.fromResult(rootElement)
+    .bind(tryGetLoginToken)
+    .run();
   const formData = token.map((token) =>
     makeFormData(username, password, token)
   );
-  const session = pageResponse.bind((response) =>
-    tryGetCookie(response, 'set-cookie').toEither(noSessionError)
+  const preSession = pageResponse.bind(getSession);
+  const loginResponse = await Operation.fromResult(
+    Either.merge(formData, preSession)
+  )
+    .bindAsync(([formData, preSession]) =>
+      postCredentials(formData, preSession)
+    )
+    .run();
+  const redirectUrl = loginResponse.bind((res) =>
+    tryGetRedirectUrl(res).toEither(noRedirectError)
   );
 
-  const testSessionUrl = Operation.combineTwo(formData, session)
-    .bindAsync(([formData, session]) => postCredentials(formData, session))
-    .bind((res) => tryGetRedirectUrl(res).toEither(noRedirectError));
+  const session = loginResponse.bind(getSession);
 
-  const loginResponse = Operation.combineTwo(session, testSessionUrl).bindAsync(
-    ([session, url]) =>
-      get<Html>(url, [withSession(session), noRedirect()]).mapError(
-        makeNetworkError
-      )
+  const successDto = await Operation.fromResult(
+    Either.merge(session, redirectUrl)
+  )
+    .bindAsync(([session, url]) =>
+      get<Html>(url, [withSession(session), noRedirect(), keepAlive()])
+        .mapError(makeNetworkError)
+        .bind((res) =>
+          res.status === 303
+            ? Either.ok(session)
+            : Either.error(noRedirectError)
+        )
+    )
+    .map<LoginSuccessResDto>((session) => ({ session }))
+    .run();
+
+  successDto.iter(
+    (dto) => res.send(dto),
+    (error) => {
+      // TODO: Add better error handling
+      console.log(`/login: ${JSON.stringify(error)}`);
+      res.sendStatus(500);
+    }
   );
-
-  await loginResponse.iter(
-    (res) => console.log(tryGetRedirectUrl(res)),
-    console.log
-  );
-
-  res.sendStatus(200);
 });
 
 export default router;

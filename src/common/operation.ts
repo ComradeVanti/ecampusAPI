@@ -15,16 +15,16 @@ export class Operation<TOk, TError> {
     );
   }
 
-  static fromEither<TOk, TError>(either: Either<TOk, TError>) {
-    return new Operation<any, TError>(Promise.resolve(either));
+  static fromResult<TOk, TError>(either: Either<TOk, TError>) {
+    return new Operation<TOk, TError>(Promise.resolve(either));
   }
 
   static fromValue<TOk>(value: TOk) {
-    return this.fromEither(Either.ok(value));
+    return this.fromResult(Either.ok(value));
   }
 
   static fromError<TError>(error: TError) {
-    return this.fromEither(Either.error(error));
+    return this.fromResult(Either.error(error));
   }
 
   static combineTwo<TOk1, TOk2, TError>(
@@ -64,4 +64,6 @@ export class Operation<TOk, TError> {
 
   iter = (onOk: (value: TOk) => void, onError: (error: TError) => void) =>
     this.promise.then((either) => either.match(onOk, onError));
+
+  run = () => this.promise;
 }
