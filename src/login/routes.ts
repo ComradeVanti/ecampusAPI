@@ -24,13 +24,15 @@ export const enum LoginErrorType {
   SCRAPE = 'Scrape',
   NO_SESSION = 'No session',
   NO_REDIRECT = 'No redirect',
+  INVALID_CREDENTIALS = 'Invalid credentials',
 }
 
 export type LoginError =
   | { type: LoginErrorType.NETWORK; error: WebError }
   | { type: LoginErrorType.SCRAPE; error: ScrapeError }
   | { type: LoginErrorType.NO_SESSION }
-  | { type: LoginErrorType.NO_REDIRECT };
+  | { type: LoginErrorType.NO_REDIRECT }
+  | { type: LoginErrorType.INVALID_CREDENTIALS };
 
 const makeNetworkError = (error: WebError): LoginError => ({
   type: LoginErrorType.NETWORK,
@@ -46,6 +48,10 @@ const noSessionError: LoginError = { type: LoginErrorType.NO_SESSION };
 
 const noRedirectError: LoginError = { type: LoginErrorType.NO_REDIRECT };
 
+const invalidCredentialsError: LoginError = {
+  type: LoginErrorType.INVALID_CREDENTIALS,
+};
+
 const router = express.Router();
 const LoginPageUrl = 'https://ecampus.fhstp.ac.at/login/index.php';
 
@@ -58,8 +64,8 @@ const tryGetLoginPage = () =>
 const tryGetLoginToken = (pageRoot: HTMLHtmlElement) =>
   scrapeLoginToken(pageRoot).mapError(makeScrapeError);
 
-const getSession = (res: AxiosResponse) =>
-  tryGetCookie(res, 'set-cookie').toEither(noSessionError);
+const tryGetSession = (res: AxiosResponse, errorIfNotFound: LoginError) =>
+  tryGetCookie(res, 'set-cookie').toEither(errorIfNotFound);
 
 const makeFormData = (username: string, password: string, token: string) => {
   const formData = new FormData();
@@ -90,7 +96,9 @@ router.get('/', async (req, res) => {
   const formData = token.map((token) =>
     makeFormData(username, password, token)
   );
-  const preSession = pageResponse.bind(getSession);
+  const preSession = pageResponse.bind((res) =>
+    tryGetSession(res, noSessionError)
+  );
   const loginResponse = await Operation.fromResult(
     Either.merge(formData, preSession)
   )
@@ -102,7 +110,9 @@ router.get('/', async (req, res) => {
     tryGetRedirectUrl(res).toEither(noRedirectError)
   );
 
-  const session = loginResponse.bind(getSession);
+  const session = loginResponse.bind((res) =>
+    tryGetSession(res, invalidCredentialsError)
+  );
 
   const successDto = await Operation.fromResult(
     Either.merge(session, redirectUrl)
@@ -122,9 +132,15 @@ router.get('/', async (req, res) => {
   successDto.iter(
     (dto) => res.send(dto),
     (error) => {
-      // TODO: Add better error handling
       console.log(`/login: ${JSON.stringify(error)}`);
-      res.sendStatus(500);
+      switch (error.type) {
+        case LoginErrorType.INVALID_CREDENTIALS:
+          return res.sendStatus(401);
+        case LoginErrorType.NETWORK:
+          return res.sendStatus(504);
+        default:
+          return res.sendStatus(500);
+      }
     }
   );
 });
