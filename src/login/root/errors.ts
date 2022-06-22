@@ -1,5 +1,5 @@
 import { WebError } from '../../common/web';
-import { ScrapeError } from '../../scrapers/scraper';
+import { ScrapeError } from '../../common/scraper';
 
 export const enum LoginErrorType {
   NETWORK = 'Network',

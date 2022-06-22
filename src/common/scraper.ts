@@ -1,6 +1,6 @@
-import { Either } from '../common/either';
-import { collectArrays } from '../common/arrayUtil';
-import { mapValues } from '../common/objectUtil';
+import { Either } from './either';
+import { collectArrays } from './arrayUtil';
+import { mapValues } from './objectUtil';
 
 export type ScrapeError = { msg: string; inner: ScrapeError | null };
 

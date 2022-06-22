@@ -7,7 +7,7 @@ import {
   makeNetworkError,
   makeScrapeError,
 } from './errors';
-import { scrapeSemesterList } from '../../scrapers/semester';
+import { scrapeSemesterList } from './scrapers';
 
 const HomePageUrl = 'https://ecampus.fhstp.ac.at';
 
