@@ -1,0 +1,18 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ecampusAPI",
+    "description": "REST wrapper around eCampus",
+    "contact": {
+      "name": "Ramon Brullo",
+      "email": "ramon.brullo@gmail.com"
+    },
+    "license": {
+      "name": "Unlicense",
+      "url": "https://unlicense.org"
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+  }
+}
