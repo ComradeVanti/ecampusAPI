@@ -19,5 +19,86 @@
     }
   ],
   "paths": {
+    "/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Log in using username and password",
+        "description": "Log into the eCampus with valid FHStp SSO credentials and get back a session to use for authentication in future requests",
+        "operationId": "login",
+        "requestBody": {
+          "description": "The credentials to login with",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/login_body"
+              },
+              "example": {
+                "username": "it211505",
+                "password": "mYs3cUrEP4S5W0rD"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login succeeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/inline_response_200"
+                },
+                "example": {
+                  "session": "boa0jfqlaqlepbv9ck3a5fnuu7"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body was malformed"
+          },
+          "401": {
+            "description": "The given credentials were incorrect"
+          },
+          "500": {
+            "description": "Wildcard error for something wrong with the server"
+          },
+          "504": {
+            "description": "ecampusAPI could not communicate with eCampus"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "login_body": {
+        "required": [
+          "password",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "inline_response_200": {
+        "required": [
+          "session"
+        ],
+        "type": "object",
+        "properties": {
+          "session": {
+            "type": "string"
+          }
+        }
+      }
+    }
   }
 }
